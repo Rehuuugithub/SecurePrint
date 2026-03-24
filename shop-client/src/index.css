@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .blur-preview {
+    filter: blur(15px);
+  }
+  .secure-blur { filter: blur(15px); pointer-events: none; }
+}
+
+@media print {
+  @page {
+    /* Optional: Hide default browser header/footer */
+    margin: 0;
+  }
+  
+  body {
+    background-color: white !important;
+    margin: 0 !important;
+  }
+  
+  .blur-preview {
+    filter: blur(0px) !important;
+  }
+  .secure-blur { filter: none !important; }
+  
+  /* Ensure header/footer styling hides or watermark appears appropriately */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Hardware Page Break Enforcement */
+  .print-page {
+    page-break-after: always;
+    display: block;
+  }
+}

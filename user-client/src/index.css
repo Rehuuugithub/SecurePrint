@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: theme('colors.surface');
+  }
+}
+
+@layer components {
+  /* Gradient Linear Buttons (Mandate Focus) */
+  .btn-primary {
+    @apply bg-gradient-to-br from-primary to-primary-container text-surface-container-lowest font-medium shadow-ambient transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg active:scale-95 border-none;
+  }
+}
