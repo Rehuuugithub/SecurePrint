@@ -18,7 +18,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const io = new Server(server, {
   maxHttpBufferSize: 5e7, // 50MB limit max payload size
   cors: {
-    origin: ["https://secure-print-delta.vercel.app/", "https://shopsecureprint-1xewxua6v-aimgame509-5872s-projects.vercel.app/", "https://shopsecureprint-git-main-aimgame509-5872s-projects.vercel.app/","https://shopsecureprint-aimgame509-5872s-projects.vercel.app/", "https://shopsecureprint.vercel.app/", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175"], 
+    origin: ["https://secure-print-delta.vercel.app","https://secure-print-3kekv44vb-aimgame509-5872s-projects.vercel.app","https://shopsecureprint-2qnjaj2sx-aimgame509-5872s-projects.vercel.app", "https://shopsecureprint-1xewxua6v-aimgame509-5872s-projects.vercel.app", "https://shopsecureprint-git-main-aimgame509-5872s-projects.vercel.app","https://shopsecureprint-aimgame509-5872s-projects.vercel.app", "https://shopsecureprint.vercel.app", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175"], 
     methods: ["GET", "POST"]
   }
 });
