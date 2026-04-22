@@ -20,9 +20,13 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const io = new Server(server, {
   maxHttpBufferSize: 5e7, // 50MB limit max payload size
   cors: {
-    origin: "*", // <--- THE FIX: This wildcard allows ALL Vercel preview URLs to connect
-    methods: ["GET", "POST"]
-  }
+  origin: [
+    "https://secureprintout.in", 
+    "https://shop.secureprintout.in",
+    "http://localhost:5173"
+  ],
+  methods: ["GET", "POST"]
+}
 });
 
 // Initialize Redis Client securely
@@ -86,12 +90,10 @@ async function generateShopCode(socketId) {
 // Phase 2 API: The Secure Upload Handshake (Multi-File Support — up to 10 files)
 app.post('/api/upload', upload.array('files', 10), async (req, res) => {
   try {
-    const uploadedFiles = req.files;
     const { pairingCode, settings } = req.body;
 
-    // Validate payload — require at least one file
-    if (!uploadedFiles || uploadedFiles.length === 0) {
-      return res.status(400).json({ error: "Missing file(s)." });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "Missing files." });
     }
     if (!pairingCode || !settings) {
       return res.status(400).json({ error: "Missing pairingCode or settings." });
@@ -113,15 +115,14 @@ app.post('/api/upload', upload.array('files', 10), async (req, res) => {
       parsedSettings = settings;
     }
 
-    // Convert each file Buffer to Base64 in memory and build files array
-    const files = uploadedFiles.map((file) => ({
-      fileBase64: file.buffer.toString('base64'),
-      mimeType: file.mimetype
+    const processedFiles = req.files.map(f => ({
+        fileBase64: f.buffer.toString('base64'),
+        mimeType: f.mimetype
     }));
     
     const payload = JSON.stringify({
       shopSocketId: shopSocketId,
-      files: files,
+      files: processedFiles,
       settings: parsedSettings
     });
 
@@ -144,15 +145,15 @@ app.post('/api/upload', upload.array('files', 10), async (req, res) => {
     // Secure Push: specific emit targeting shopSocketId (No Broadcasts permitted cross-talk)
     io.to(shopSocketId).emit('document_incoming', {
       printToken: printToken,
-      files: files,
+      files: processedFiles,
       settings: parsedSettings
     });
 
-    console.log(`[Upload API] Securely routed ${files.length} file(s) to Shop ${shopSocketId} via Token ${printToken.slice(0,6)}...`);
+    console.log(`[Upload API] Securely routed ${processedFiles.length} file(s) to Shop ${shopSocketId} via Token ${printToken.slice(0,6)}...`);
 
     return res.status(200).json({
       success: true,
-      message: `${files.length} document(s) securely routed to printer.`
+      message: `${processedFiles.length} document(s) securely routed to printer.`
     });
 
   } catch (error) {
