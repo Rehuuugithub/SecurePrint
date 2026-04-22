@@ -312,10 +312,10 @@ function App() {
               type="submit"
               disabled={isLoading || files.length === 0 || pairingCode.length !== 6}
               className={`w-full py-4 rounded-xl text-sm font-bold tracking-wider uppercase transition-all duration-300 ${files.length === 0 || pairingCode.length !== 6
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : isLoading
-                    ? 'bg-primary/80 text-white cursor-wait'
-                    : 'bg-gradient-to-r from-primary to-primary-container text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md'
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : isLoading
+                  ? 'bg-primary/80 text-white cursor-wait'
+                  : 'bg-gradient-to-r from-primary to-primary-container text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md'
                 }`}
             >
               {isLoading ? (
@@ -384,7 +384,7 @@ function App() {
               <div className="flex flex-col gap-2.5">
                 <div>
                   <span className="block text-[0.65rem] text-slate-500 uppercase tracking-wider font-semibold mb-0.5">Lead</span>
-                  <a href="mailto:raihan734002@gmail.com" className="text-xs text-slate-400 hover:text-white transition-colors">rihan734002@gmail.com</a>
+                  <a href="mailto:raihan734002@gmail.com" className="text-xs text-slate-400 hover:text-white transition-colors">raihan734002@gmail.com</a>
                 </div>
                 <div>
                   <span className="block text-[0.65rem] text-slate-500 uppercase tracking-wider font-semibold mb-0.5">Team</span>
