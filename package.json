@@ -1,0 +1,30 @@
+{
+  "name": "secureprint",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "install:all": "npm install && cd server && npm install && cd ../shop-client && npm install && cd ../user-client && npm install",
+    "dev:server": "cd server && npx nodemon server.js",
+    "dev:shop": "cd shop-client && npm run dev",
+    "dev:user": "cd user-client && npm run dev",
+    "dev": "concurrently -c \"cyan,magenta,yellow\" -n \"SERVER,SHOP,USER\" \"npm run dev:server\" \"npm run dev:shop\" \"npm run dev:user\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rehuuugithub/SecurePrint.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Rehuuugithub/SecurePrint/issues"
+  },
+  "homepage": "https://github.com/Rehuuugithub/SecurePrint#readme",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'PrintIt User Portal',
-        short_name: 'PrintIt',
+        name: 'Secure Printout User Portal',
+        short_name: 'Secure Printout',
         description: 'Secure, Zero-Retention Cloud Printing',
         theme_color: '#00488d',
         icons: [

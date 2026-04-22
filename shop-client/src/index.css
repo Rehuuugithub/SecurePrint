@@ -14,25 +14,65 @@
     /* Optional: Hide default browser header/footer */
     margin: 0;
   }
-  
+
+  /* Reset all default browser margins and heights */
+  html, body, #root {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+    background: white !important;
+  }
+
   body {
     background-color: white !important;
-    margin: 0 !important;
   }
-  
+
+  /* Kill all fixed/absolute decorative layers (backgrounds, orbs, patterns) */
+  [class*="fixed"] {
+    display: none !important;
+  }
+
+  /* Strip all backdrop filters and backgrounds from containers */
+  * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
   .blur-preview {
     filter: blur(0px) !important;
   }
   .secure-blur { filter: none !important; }
-  
+
   /* Ensure header/footer styling hides or watermark appears appropriately */
   .no-print {
     display: none !important;
   }
-  
-  /* Hardware Page Break Enforcement */
+
   .print-page {
+    break-after: page;
     page-break-after: always;
     display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Prevent the trailing blank page */
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* Ensure rendered page images scale to fit within the printed page */
+  .print-page img {
+    display: block;
+    width: 100%;
+    max-width: 100vw;
+    height: auto;
+    max-height: 100vh;
+    object-fit: contain;
+    margin: 0;
+    padding: 0;
   }
 }

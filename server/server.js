@@ -1,7 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const Redis = require('ioredis');
+const { Redis: UpstashRedis } = require('@upstash/redis');
+const IoRedis = require('ioredis');
 const multer = require('multer');
 const cors = require('cors');
 const crypto = require('crypto'); // Built-in cryptography module
@@ -23,16 +25,25 @@ const io = new Server(server, {
   }
 });
 
-// Initialize Redis Client
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+// Initialize Redis Client securely
+let redis;
+let isUpstash = false;
 
-redis.on('connect', () => {
-  console.log('=> Connected to Local Redis Instance');
-});
-
-redis.on('error', (err) => {
-  console.error('=> Redis connection error:', err);
-});
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  redis = UpstashRedis.fromEnv();
+  isUpstash = true;
+  console.log('=> Connected to Upstash Redis (REST) successfully');
+  // Mock event emitters so ioredis-specific app events don't crash
+  redis.on = () => {};
+} else {
+  redis = new IoRedis(process.env.REDIS_URL || 'redis://localhost:6379');
+  redis.on('connect', () => {
+    console.log('=> Connected to TCP Redis Instance');
+  });
+  redis.on('error', (err) => {
+    console.error('=> Redis connection error:', err);
+  });
+}
 
 // Setup Multer exclusively with memoryStorage (Mandate #5 constraints)
 const upload = multer({
@@ -55,10 +66,15 @@ async function generateShopCode(socketId) {
     const code = crypto.randomInt(100000, 1000000).toString();
 
     // 3. Write strict 60s TTL to Redis
-    const pipeline = redis.pipeline();
-    pipeline.set(`shop:${socketId}:code`, code, 'EX', 60);
-    pipeline.set(`code:${code}`, socketId, 'EX', 60);
-    await pipeline.exec();
+    if (isUpstash) {
+      await redis.set(`shop:${socketId}:code`, code, { ex: 60 });
+      await redis.set(`code:${code}`, socketId, { ex: 60 });
+    } else {
+      const pipeline = redis.pipeline();
+      pipeline.set(`shop:${socketId}:code`, code, 'EX', 60);
+      pipeline.set(`code:${code}`, socketId, 'EX', 60);
+      await pipeline.exec();
+    }
     
     return code;
   } catch (err) {
@@ -67,15 +83,15 @@ async function generateShopCode(socketId) {
   }
 }
 
-// Phase 2 API: The Secure Upload Handshake
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+// Phase 2 API: The Secure Upload Handshake (Multi-File Support — up to 10 files)
+app.post('/api/upload', upload.array('files', 10), async (req, res) => {
   try {
-    const file = req.file;
+    const uploadedFiles = req.files;
     const { pairingCode, settings } = req.body;
 
-    // Validate payload
-    if (!file) {
-      return res.status(400).json({ error: "Missing file." });
+    // Validate payload — require at least one file
+    if (!uploadedFiles || uploadedFiles.length === 0) {
+      return res.status(400).json({ error: "Missing file(s)." });
     }
     if (!pairingCode || !settings) {
       return res.status(400).json({ error: "Missing pairingCode or settings." });
@@ -97,37 +113,46 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       parsedSettings = settings;
     }
 
-    // Convert Buffer to Base64 in memory
-    const fileBase64 = file.buffer.toString('base64');
+    // Convert each file Buffer to Base64 in memory and build files array
+    const files = uploadedFiles.map((file) => ({
+      fileBase64: file.buffer.toString('base64'),
+      mimeType: file.mimetype
+    }));
     
     const payload = JSON.stringify({
       shopSocketId: shopSocketId,
-      fileBase64: fileBase64,
-      mimeType: file.mimetype,
+      files: files,
       settings: parsedSettings
     });
 
-    const pipeline = redis.pipeline();
-    // Save file payload to Redis (300s TTL)
-    pipeline.set(`token:${printToken}`, payload, 'EX', 300);
-    // Immediately invalidate the pairingCode (One-Time Use)
-    pipeline.del(`code:${pairingCode}`);
-    pipeline.del(`shop:${shopSocketId}:code`);
-    await pipeline.exec();
+    if (isUpstash) {
+      // Save file payload to Redis (300s TTL)
+      await redis.set(`token:${printToken}`, payload, { ex: 300 });
+      // Immediately invalidate the pairingCode (One-Time Use)
+      await redis.del(`code:${pairingCode}`);
+      await redis.del(`shop:${shopSocketId}:code`);
+    } else {
+      const pipeline = redis.pipeline();
+      // Save file payload to Redis (300s TTL)
+      pipeline.set(`token:${printToken}`, payload, 'EX', 300);
+      // Immediately invalidate the pairingCode (One-Time Use)
+      pipeline.del(`code:${pairingCode}`);
+      pipeline.del(`shop:${shopSocketId}:code`);
+      await pipeline.exec();
+    }
 
     // Secure Push: specific emit targeting shopSocketId (No Broadcasts permitted cross-talk)
     io.to(shopSocketId).emit('document_incoming', {
       printToken: printToken,
-      fileBase64: fileBase64,
-      mimeType: file.mimetype,
+      files: files,
       settings: parsedSettings
     });
 
-    console.log(`[Upload API] Securely routed to Shop ${shopSocketId} via Token ${printToken.slice(0,6)}...`);
+    console.log(`[Upload API] Securely routed ${files.length} file(s) to Shop ${shopSocketId} via Token ${printToken.slice(0,6)}...`);
 
     return res.status(200).json({
       success: true,
-      message: "Document securely routed to printer."
+      message: `${files.length} document(s) securely routed to printer.`
     });
 
   } catch (error) {
@@ -172,10 +197,15 @@ io.on('connection', async (socket) => {
     console.log(`[Socket] Connection dropped: ${socket.id}`);
     const existingCode = await redis.get(`shop:${socket.id}:code`);
     if (existingCode) {
-       const pipeline = redis.pipeline();
-       pipeline.del(`shop:${socket.id}:code`);
-       pipeline.del(`code:${existingCode}`);
-       await pipeline.exec();
+       if (isUpstash) {
+        await redis.del(`shop:${socket.id}:code`);
+        await redis.del(`code:${existingCode}`);
+       } else {
+        const pipeline = redis.pipeline();
+        pipeline.del(`shop:${socket.id}:code`);
+        pipeline.del(`code:${existingCode}`);
+        await pipeline.exec();
+       }
        console.log(`[Socket] Cleaned up code ${existingCode} for dropped socket`);
     }
   });
@@ -191,5 +221,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`=> PrintIt backend running on port ${PORT}`);
+  console.log(`=> Secure Printout backend running on port ${PORT}`);
 });

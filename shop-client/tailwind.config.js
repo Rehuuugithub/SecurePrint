@@ -20,6 +20,7 @@ export default {
       },
       fontFamily: {
         inter: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       boxShadow: {
         'ambient': '0 -4px 40px 0px rgba(88, 101, 121, 0.08)', // Ambient shadow specified in DESIGN.md
