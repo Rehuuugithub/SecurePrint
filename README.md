@@ -6,8 +6,8 @@
 
 ## 🚀 Live Demo
 
-* 👤 User App: https://secure-print-delta.vercel.app/
-* 🖨️ Shop Portal: https://shopsecureprint.vercel.app/
+* 👤 User App: https://secureprintout.in/
+* 🖨️ Shop Portal: https://shop.secureprintout.in/
 
 ---
 
